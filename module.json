@@ -2,6 +2,7 @@
   "name": "mbed-example-asynch-i2c",
   "version": "0.0.1",
   "description": "Asynch I2C example",
+  "private" : true,
   "keywords": [
     "mbed",
     "cpputest",
