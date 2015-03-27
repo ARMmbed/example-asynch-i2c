@@ -48,4 +48,5 @@ The following I2C events are available:
 - I2C_EVENT_ERROR - Generic I2C error
 - I2C_EVENT_ERROR_NO_SLAVE - No slave found
 - I2C_EVENT_TRANSFER_COMPLETE - All data were transfered or received, depends on the transfer parameters
+- I2C_EVENT_TRANSFER_EARLY_NACK - transfered not completed with nack received from a slave
 - I2C_EVENT_ALL - Logical OR of all available events
