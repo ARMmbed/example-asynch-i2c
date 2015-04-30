@@ -47,12 +47,14 @@ TEST_GROUP(I2C_Master_EEPROM_Asynchronous)
 {
     I2C *obj;
     const int eeprom_address = 0xA0;
+    event_callback_t callback;
 
     void setup() {
         obj = new I2C(TEST_SDA_PIN, TEST_SCL_PIN);
         obj->frequency(400000);
         complete = false;
         why = 0;
+        callback.attach(cbdone);
     }
 
     void teardown() {
@@ -67,9 +69,10 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_separate_transactions)
     int rc;
     char data[] = { 0, 0, 0x66};
 
-    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc);
     while(!complete);
+
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
 
     wait(0.005);
@@ -80,7 +83,7 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_separate_transactions)
     data[2] = 0;
     why = 0;
     complete = 0;
-    obj->transfer(eeprom_address, data, 2, NULL, 0, cbdone, I2C_EVENT_ALL, true);
+    obj->transfer(eeprom_address, data, 2, NULL, 0, callback, I2C_EVENT_ALL, true);
     while(!complete);
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
 
@@ -89,7 +92,7 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_separate_transactions)
     data[2] = 0;
     why = 0;
     complete = 0;
-    rc = obj->transfer(eeprom_address, NULL, 0, data, 1, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, NULL, 0, data, 1, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc);
     while(!complete);
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
@@ -100,9 +103,11 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_one_transactions)
 {
     int rc;
     char send_data[] = { 0, 0, 0x66};
-    rc = obj->transfer(eeprom_address, send_data, sizeof(send_data), NULL, 0, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, send_data, sizeof(send_data), NULL, 0, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc)
+
     while(!complete);
+
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
 
     wait(0.005);
@@ -113,7 +118,7 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_one_transactions)
     char receive_data[1] = {0};
     why = 0;
     complete = 0;
-    rc = obj->transfer(eeprom_address, send_data, 2, receive_data, 1, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, send_data, 2, receive_data, 1, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc);
     while(!complete);
 
@@ -126,24 +131,24 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_pattern)
     int rc;
     char data[] = { 0, 0, PATTERN_MASK};
     // write 8 bytes to 0x0, then read them
-    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc);
+
     while (!complete);
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
     wait(0.005);
 
     complete = 0;
     why = 0;
      char rec_data[8] = {0};
-    rc = obj->transfer(eeprom_address, rec_data, 2, NULL, 0, cbdone, I2C_EVENT_ALL, true);
+    rc = obj->transfer(eeprom_address, rec_data, 2, NULL, 0, callback, I2C_EVENT_ALL, true);
     CHECK_EQUAL(0, rc);
     while (!complete);
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
 
     complete = 0;
     why = 0;
-    rc = obj->transfer(eeprom_address, NULL, 0, rec_data, 8, cbdone, I2C_EVENT_ALL, false);
+    rc = obj->transfer(eeprom_address, NULL, 0, rec_data, 8, callback, I2C_EVENT_ALL, false);
     CHECK_EQUAL(0, rc);
     while (!complete);
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
