@@ -32,7 +32,7 @@
 #error Target not supported
 #endif
 
-#define PATTERN_MASK 0x66, ~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F
+#define PATTERN_MASK 0x66, (char)~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F
 
 volatile int why;
 volatile bool complete;
@@ -41,12 +41,11 @@ void cbdone(int event) {
     why = event;
 }
 
-const unsigned char pattern[] = { PATTERN_MASK };
+const int eeprom_address = 0xA0;
 
 TEST_GROUP(I2C_Master_EEPROM_Asynchronous)
 {
     I2C *obj;
-    const int eeprom_address = 0xA0;
     event_callback_t callback;
 
     void setup() {
@@ -196,6 +195,7 @@ TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_pattern)
     }
     CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
 
+    const char pattern[] = { PATTERN_MASK };
     // received buffer match with pattern
     rc = memcmp(pattern, rec_data, sizeof(rec_data));
     CHECK_EQUAL(0, rc);
