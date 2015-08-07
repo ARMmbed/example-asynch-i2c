@@ -1,5 +1,5 @@
 {
-  "name": "mbed-example-asynch-i2c",
+  "name": "example-asynch-i2c",
   "version": "0.0.4",
   "description": "Asynch I2C example",
   "private": true,
@@ -18,7 +18,7 @@
   "extraIncludes": [],
   "dependencies": {
     "mbed": "~3.0.2",
-    "mbed-cpputest": "~0.0.7"
+    "cpputest": "~0.0.7"
   },
   "targetDependencies": {},
   "bin": "./source"
