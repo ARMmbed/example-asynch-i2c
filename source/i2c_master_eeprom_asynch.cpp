@@ -49,24 +49,30 @@ public:
         init_tx_buffer();
         init_rx_buffer();
         set_tx_pattern(2); // set 0,0, pattern
-        i2c.transfer(eeprom_address, tx_data, sizeof(tx_data), NULL, 0, event_callback_t(this, &I2CTest::slave_ready), I2C_EVENT_ALL, false);
+        i2c.transfer(eeprom_address, tx_data, sizeof(tx_data), NULL, 0, I2C::event_callback_t(this, &I2CTest::slave_ready), I2C_EVENT_ALL, false);
     }
 
 private:
-    void slave_ready(int narg) {
+    void slave_ready(Buffer tx_buffer, Buffer rx_buffer, int narg) {
+        (void)tx_buffer;
+        (void)rx_buffer;
         printf("Writing DONE, event is %d\r\n", narg);
         // check if slave is ready, register another callback
-        i2c.transfer(eeprom_address, NULL, 0, NULL, 0, event_callback_t(this, &I2CTest::read_data_cb), I2C_EVENT_ALL, false);
+        i2c.transfer(eeprom_address, NULL, 0, NULL, 0, I2C::event_callback_t(this, &I2CTest::read_data_cb), I2C_EVENT_ALL, false);
     }
 
-    void read_data_cb(int narg) {
+    void read_data_cb(Buffer tx_buffer, Buffer rx_buffer, int narg) {
+        (void)tx_buffer;
+        (void)rx_buffer;
         printf("Writing DONE (slave is ready), event is %d\r\n", narg);
         tx_data[0] = 0;
         tx_data[1] = 0;
-        i2c.transfer(eeprom_address, tx_data, 2, rx_data, 8, event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
+        i2c.transfer(eeprom_address, tx_data, 2, rx_data, 8, I2C::event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
     }
 
-    void compare_data_cb(int narg) {
+    void compare_data_cb(Buffer tx_buffer, Buffer rx_buffer, int narg) {
+        (void)tx_buffer;
+        (void)rx_buffer;
         // received buffer match with pattern
         int rc = memcmp(pattern, rx_data, sizeof(rx_data));
         if (rc == 0) {
