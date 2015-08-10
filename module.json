@@ -1,6 +1,6 @@
 {
   "name": "example-asynch-i2c",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "Asynch I2C example",
   "private": true,
   "keywords": [
