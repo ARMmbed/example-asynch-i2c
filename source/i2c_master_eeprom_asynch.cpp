@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <TestHarness.h>
-#include <mbed.h>
 #include <stdio.h>
+
+#include "mbed.h"
+#include "minar/minar.h"
+#include "Event.h"
 
 /* EEPROM 24LC256 Test Unit, to test I2C asynchronous communication.
  */
 
-#if !DEVICE_I2C || !DEVICE_I2C_ASYNCH
-#error i2c_master_eeprom_asynch requires asynch I2C
-#endif
-
+#if DEVICE_I2C && DEVICE_I2C_ASYNCH
 
 #if defined(TARGET_K64F)
 #define TEST_SDA_PIN PTE25
@@ -32,171 +31,85 @@
 #error Target not supported
 #endif
 
-#define PATTERN_MASK 0x66, (char)~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F
+using namespace minar;
 
-volatile int why;
-volatile bool complete;
-void cbdone(int event) {
-    complete = true;
-    why = event;
-}
-
+const char pattern[] = {0x66, (char)~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F};
 const int eeprom_address = 0xA0;
+const size_t buffer_size = 8;
 
-TEST_GROUP(I2C_Master_EEPROM_Asynchronous)
-{
-    I2C *obj;
-    event_callback_t callback;
+class I2CTest {
 
-    void setup() {
-        obj = new I2C(TEST_SDA_PIN, TEST_SCL_PIN);
-        obj->frequency(400000);
-        complete = false;
-        why = 0;
-        callback.attach(cbdone);
+public:
+    I2CTest() : i2c(TEST_SDA_PIN, TEST_SCL_PIN) {
+        i2c.frequency(400000);
     }
 
-    void teardown() {
-        delete obj;
-        obj = NULL;
+    void start() {
+        printf("Starting transfer test \r\n");
+        init_tx_buffer();
+        init_rx_buffer();
+        set_tx_pattern(2); // set 0,0, pattern
+        i2c.transfer(eeprom_address, tx_data, sizeof(tx_data), NULL, 0, event_callback_t(this, &I2CTest::slave_ready), I2C_EVENT_ALL, false);
     }
 
+private:
+    void slave_ready(int narg) {
+        printf("Writing DONE, event is %d\r\n", narg);
+        // check if slave is ready, register another callback
+        i2c.transfer(eeprom_address, NULL, 0, NULL, 0, event_callback_t(this, &I2CTest::read_data_cb), I2C_EVENT_ALL, false);
+    }
+
+    void read_data_cb(int narg) {
+        printf("Writing DONE (slave is ready), event is %d\r\n", narg);
+        tx_data[0] = 0;
+        tx_data[1] = 0;
+        i2c.transfer(eeprom_address, tx_data, 2, rx_data, 8, event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
+    }
+
+    void compare_data_cb(int narg) {
+        // received buffer match with pattern
+        int rc = memcmp(pattern, rx_data, sizeof(rx_data));
+        if (rc == 0) {
+            printf("Read data match with written data, event is %d\r\n", narg);
+        } else {
+            printf("Read data doesn't match with written data, event is %d\r\n", narg);
+        }
+        printf("**** Test done ****\r\n");
+    }
+
+    void init_tx_buffer() {
+        for (uint32_t i = 0; i < sizeof(tx_data); i++) {
+            tx_data[i] = 0;
+        }
+    }
+
+    void init_rx_buffer() {
+        for (uint32_t i = 0; i < sizeof(rx_data); i++) {
+            rx_data[i] = 0;
+        }
+    }
+
+    void set_tx_pattern(uint32_t offset) {
+        for (uint32_t i = offset, j = 0; i < sizeof(tx_data) && j < sizeof(pattern); i++, j++) {
+            tx_data[i] = pattern[j];
+        }
+    }
+
+private:
+    I2C i2c;
+    char tx_data[buffer_size];
+    char rx_data[buffer_size];
 };
 
-TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_separate_transactions)
-{
-    int rc;
-    char data[] = { 0, 0, 0x66};
 
-    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc);
-    while (!complete) {
-        sleep();
-    }
-
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    // wait until slave is ready
-    do {
-        complete = 0;
-        why = 0;
-        obj->transfer(eeprom_address, NULL, 0, NULL, 0, callback, I2C_EVENT_ALL, false);
-        while (!complete) {
-            sleep();
-        }
-    } while (why != I2C_EVENT_TRANSFER_COMPLETE);
-
-
-    // write the address for reading (0,0) then start reading data
-    data[0] = 0;
-    data[1] = 0;
-    data[2] = 0;
-    why = 0;
-    complete = 0;
-    obj->transfer(eeprom_address, data, 2, NULL, 0, callback, I2C_EVENT_ALL, true);
-    while (!complete) {
-        sleep();
-    }
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    data[0] = 0;
-    data[1] = 0;
-    data[2] = 0;
-    why = 0;
-    complete = 0;
-    rc = obj->transfer(eeprom_address, NULL, 0, data, 1, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc);
-    while (!complete) {
-        sleep();
-    }
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-    CHECK_EQUAL(data[0], 0x66);
+void app_start(int, char*[]) {
+    static I2CTest test;
+    Scheduler::postCallback(FunctionPointer0<void>(&test, &I2CTest::start).bind());
 }
 
-TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_one_byte_one_transactions)
-{
-    int rc;
-    char send_data[] = { 0, 0, 0x66};
-    rc = obj->transfer(eeprom_address, send_data, sizeof(send_data), NULL, 0, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc)
+#else
 
-    while (!complete) {
-        sleep();
-    }
-
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    // wait until slave is ready
-    do {
-        complete = 0;
-        why = 0;
-        obj->transfer(eeprom_address, NULL, 0, NULL, 0, callback, I2C_EVENT_ALL, false);
-        while (!complete) {
-            sleep();
-        }
-    } while (why != I2C_EVENT_TRANSFER_COMPLETE);
-
-
-    send_data[0] = 0;
-    send_data[1] = 0;
-    send_data[2] = 0;
-    char receive_data[1] = {0};
-    why = 0;
-    complete = 0;
-    rc = obj->transfer(eeprom_address, send_data, 2, receive_data, 1, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc);
-    while (!complete) {
-        sleep();
-    }
-
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-    CHECK_EQUAL(receive_data[0], 0x66);
+void app_start(int, char*[]) {
+    printf("The target does not support I2C asynch API.\r\n");
 }
-
-TEST(I2C_Master_EEPROM_Asynchronous, tx_rx_pattern)
-{
-    int rc;
-    char data[] = { 0, 0, PATTERN_MASK};
-    // write 8 bytes to 0x0, then read them
-    rc = obj->transfer(eeprom_address, data, sizeof(data), NULL, 0, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc);
-
-    while (!complete) {
-        sleep();
-    }
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    // wait until slave is ready
-    do {
-        complete = 0;
-        why = 0;
-        obj->transfer(eeprom_address, NULL, 0, NULL, 0, callback, I2C_EVENT_ALL, false);
-        while (!complete) {
-            sleep();
-        }
-    } while (why != I2C_EVENT_TRANSFER_COMPLETE);
-
-    complete = 0;
-    why = 0;
-    char rec_data[8] = {0};
-    rc = obj->transfer(eeprom_address, rec_data, 2, NULL, 0, callback, I2C_EVENT_ALL, true);
-    CHECK_EQUAL(0, rc);
-    while (!complete) {
-        sleep();
-    }
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    complete = 0;
-    why = 0;
-    rc = obj->transfer(eeprom_address, NULL, 0, rec_data, 8, callback, I2C_EVENT_ALL, false);
-    CHECK_EQUAL(0, rc);
-    while (!complete) {
-        sleep();
-    }
-    CHECK_EQUAL(why, I2C_EVENT_TRANSFER_COMPLETE);
-
-    const char pattern[] = { PATTERN_MASK };
-    // received buffer match with pattern
-    rc = memcmp(pattern, rec_data, sizeof(rec_data));
-    CHECK_EQUAL(0, rc);
-}
+#endif
