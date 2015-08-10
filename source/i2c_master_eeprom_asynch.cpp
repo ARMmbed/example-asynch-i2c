@@ -110,6 +110,6 @@ void app_start(int, char*[]) {
 #else
 
 void app_start(int, char*[]) {
-    printf("The target does not support I2C asynch API. \r\n")
+    printf("The target does not support I2C asynch API.\r\n");
 }
 #endif
