@@ -46,7 +46,7 @@ The datasheet for the eeprom can be found [here](http://dlnmh9ip6v2uc.cloudfront
 
 3. Copy ``build/frdm-k64f-gcc/source/example-asynch-i2c.bin`` to your mbed board and wait until the LED next to the USB port stops blinking.
 
-4. Start the serial terminal emulator and connect to the virtual serial port presented by FRDM-K64F. For settings, use 9600 baud, 8N1, no flow control.
+4. Start the serial terminal emulator and connect to the virtual serial port presented by FRDM-K64F. For settings, use 115200 baud, 8N1, no flow control.
 
 5. Press the reset button on the board.
 
