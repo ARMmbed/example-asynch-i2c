@@ -17,7 +17,7 @@
 
 #include "mbed.h"
 #include "minar/minar.h"
-#include "Event.h"
+#include "mbed-util/Event.h"
 
 /* EEPROM 24LC256 Test Unit, to test I2C asynchronous communication.
  */
@@ -113,7 +113,7 @@ void app_start(int, char*[]) {
     // set 115200 baud rate for stdout
     static Serial pc(USBTX, USBRX);
     pc.baud(115200);
-    Scheduler::postCallback(FunctionPointer0<void>(&test, &I2CTest::start).bind());
+    Scheduler::postCallback(mbed::util::FunctionPointer0<void>(&test, &I2CTest::start).bind());
 }
 
 #else
