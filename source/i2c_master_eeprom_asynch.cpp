@@ -17,7 +17,7 @@
 
 #include "mbed.h"
 #include "minar/minar.h"
-#include "mbed-util/Event.h"
+#include "core-util/Event.h"
 
 /* EEPROM 24LC256 Test Unit, to test I2C asynchronous communication.
  */
