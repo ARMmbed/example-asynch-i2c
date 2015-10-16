@@ -19,16 +19,11 @@
 #include "minar/minar.h"
 #include "core-util/Event.h"
 
-/* EEPROM 24LC256 Test Unit, to test I2C asynchronous communication.
- */
-
 #if DEVICE_I2C && DEVICE_I2C_ASYNCH
 
-#if defined(TARGET_K64F)
-#define TEST_SDA_PIN PTE25
-#define TEST_SCL_PIN PTE24
-#else
-#error Target not supported
+#if !defined(YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SDA) || !defined(YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SCL)
+#error This example requires I2C test pins to be defined. Please define the hardware.test-pins.i2c.sda/scl \
+    yotta confing values
 #endif
 
 using namespace minar;
@@ -40,7 +35,7 @@ const size_t buffer_size = 8;
 class I2CTest {
 
 public:
-    I2CTest() : i2c(TEST_SDA_PIN, TEST_SCL_PIN) {
+    I2CTest() : i2c(YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SDA, YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SCL) {
         i2c.frequency(400000);
     }
 
