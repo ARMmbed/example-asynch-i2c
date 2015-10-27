@@ -48,8 +48,7 @@ public:
     }
 
 private:
-    void write_data_complete(Buffer tx_buffer, Buffer rx_buffer, int narg)
-    {
+    void write_data_complete(Buffer tx_buffer, Buffer rx_buffer, int narg) {
         (void)tx_buffer;
         (void)rx_buffer;
         printf("Writing DONE, event is %d\r\n", narg);
