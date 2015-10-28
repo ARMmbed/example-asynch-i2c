@@ -55,7 +55,8 @@ The datasheet for the eeprom can be found [here](http://dlnmh9ip6v2uc.cloudfront
     ```
     Starting transfer test
     Writing DONE, event is 8
-    Writing DONE (slave is ready), event is 8
+    Slave is ready for reading, event is 8
+    Reading DONE, event is 8
     Read data match with written data, event is 8
     **** Test done ****
     ```
