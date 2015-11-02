@@ -1,6 +1,6 @@
 {
   "name": "example-asynch-i2c",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Asynch I2C example",
   "keywords": [
     "mbed",
