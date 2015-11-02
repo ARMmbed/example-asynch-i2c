@@ -19,13 +19,26 @@ To build and run this example the following requirements are necessary:
 
 ### Pins
 
-EEPROM pin definitions are target specific - the code and the physical board must both be using the same pins:
+SDA and SCL pin definitions are target-specific. To function correctly, the code and the physical board must both be using the same pins. Follow these steps to determine which pins the code is configured to use.
 
-1. To know which pins the code is looking for, see the ``i2c_master_eeprom_asynch.cpp`` file for this sample. The pins are defined as ``TEST_SDA_PIN`` and ``TEST_SCL_PIN``.
+1. First, find the pin references in the source files.  In this example, view ``i2c_master_eeprom_asynch.cpp``. The pin references are ``YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SDA``, ``YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SCL``.
 
-2. To know where on your board those pins are, please look at its [pinout picture](http://developer.mbed.org/platforms/FRDM-K64F/#overview).
+2. Next, find the target-specific pin definitions corresponding to the pin references in the target's ``target.json`` file. The file is located at ``yotta_targets/frdm-k64f-gcc/target.json``.
 
-The datasheet for the eeprom can be found [here](http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Components/General%20IC/34979_SPCN.pdf). It requires Vcc, GND, SDA and SCL pins connected to the target.
+    Each keyword in the pin reference represents a level in the target configuration structure.  To find what YOTTA_CFG_HARDWARE_TEST_PINS_SPI resolves to, look under config/hardware/test-pins/i2c.
+
+    The i2c pins for FRDM-K64F are:
+
+    ```
+    "i2c": {
+      "sda": "PTE25",
+      "scl": "PTE24"
+    }
+    ```
+
+3. Finally, locate those pins on the board's [pinout picture](http://developer.mbed.org/platforms/FRDM-K64F/#overview).
+
+The EEPROM pinout diagram can be found in the datasheet [here](http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Components/General%20IC/34979_SPCN.pdf).
 
 ### Getting Started
 
