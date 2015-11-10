@@ -43,22 +43,15 @@ public:
         printf("Starting transfer test \r\n");
         init_tx_buffer();
         init_rx_buffer();
-        set_eeprom_access_address(1000);
-        i2c.transfer(eeprom_address, tx_data, 2, NULL, 0, I2C::event_callback_t(this, &I2CTest::write_address_complete), I2C_EVENT_ALL, true);
+        set_eeprom_access_address(0x100);
+        set_tx_pattern();
+        i2c.transfer(eeprom_address, tx_data, sizeof(tx_data), NULL, 0, I2C::event_callback_t(this, &I2CTest::write_data_complete), I2C_EVENT_ALL, false);
     }
 
 private:
     void set_eeprom_access_address(unsigned int address) {
         tx_data[0] = (address >> 8) & 0xFF; // high byte address
         tx_data[1] = address & 0xFF;        // low byte address
-    }
-
-    void write_address_complete(Buffer tx_buffer, Buffer rx_buffer, int narg) {
-        (void)tx_buffer;
-        (void)rx_buffer;
-        printf("Writing address DONE, event is %d\r\n", narg);
-        set_tx_pattern();
-        i2c.transfer(eeprom_address, tx_data, buffer_size, NULL, 0, I2C::event_callback_t(this, &I2CTest::write_data_complete), I2C_EVENT_ALL, false);
     }
 
     void write_data_complete(Buffer tx_buffer, Buffer rx_buffer, int narg) {
@@ -84,8 +77,8 @@ private:
         (void)tx_buffer;
         (void)rx_buffer;
         printf("Slave is ready for reading, event is %d\r\n", narg);
-        set_eeprom_access_address(1000);
-        i2c.transfer(eeprom_address, tx_data, 2, rx_data, buffer_size, I2C::event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
+        set_eeprom_access_address(0x100);
+        i2c.transfer(eeprom_address, tx_data, 2, rx_data, sizeof(rx_data), I2C::event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
     }
 
     void compare_data_cb(Buffer tx_buffer, Buffer rx_buffer, int narg) {
@@ -93,7 +86,7 @@ private:
         (void)rx_buffer;
         printf("Reading DONE, event is %d\r\n", narg);
         // received buffer match with pattern
-        int rc = memcmp(pattern, rx_data, buffer_size);
+        int rc = memcmp(pattern, rx_data, sizeof(rx_data));
         if (rc == 0) {
             printf("Read data match with written data, event is %d\r\n", narg);
         } else {
@@ -118,14 +111,14 @@ private:
     }
 
     void set_tx_pattern() {
-        for (uint32_t i = 0; i < sizeof(tx_data); i++) {
-            tx_data[i] = pattern[i];
+        for (uint32_t i = 0; i < buffer_size; i++) {
+            tx_data[i + 2] = pattern[i];
         }
     }
 
 private:
     I2C i2c;
-    char tx_data[buffer_size];
+    char tx_data[buffer_size + 2];
     char rx_data[buffer_size];
 };
 
