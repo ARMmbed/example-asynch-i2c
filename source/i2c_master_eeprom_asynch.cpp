@@ -28,9 +28,9 @@
 
 using namespace minar;
 
-const char pattern[] = {0x66, (char)~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F};
+const char pattern[] = {0x66, (char)~0x66, 0x00, 0xFF, 0xA5, 0x5A, 0xF0, 0x0F, 0x33, 0xAA, 0xF0, 0x0F, 0xFF};
 const int eeprom_address = 0xA0;
-const size_t buffer_size = 8;
+const size_t buffer_size = sizeof(pattern);
 
 class I2CTest {
 
@@ -43,11 +43,17 @@ public:
         printf("Starting transfer test \r\n");
         init_tx_buffer();
         init_rx_buffer();
-        set_tx_pattern(2); // set 0,0, pattern
+        set_eeprom_access_address(0x100);
+        set_tx_pattern();
         i2c.transfer(eeprom_address, tx_data, sizeof(tx_data), NULL, 0, I2C::event_callback_t(this, &I2CTest::write_data_complete), I2C_EVENT_ALL, false);
     }
 
 private:
+    void set_eeprom_access_address(unsigned int address) {
+        tx_data[0] = (address >> 8) & 0xFF; // high byte address
+        tx_data[1] = address & 0xFF;        // low byte address
+    }
+
     void write_data_complete(Buffer tx_buffer, Buffer rx_buffer, int narg) {
         (void)tx_buffer;
         (void)rx_buffer;
@@ -71,9 +77,8 @@ private:
         (void)tx_buffer;
         (void)rx_buffer;
         printf("Slave is ready for reading, event is %d\r\n", narg);
-        tx_data[0] = 0;
-        tx_data[1] = 0;
-        i2c.transfer(eeprom_address, tx_data, 2, rx_data, 8, I2C::event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
+        set_eeprom_access_address(0x100);
+        i2c.transfer(eeprom_address, tx_data, 2, rx_data, sizeof(rx_data), I2C::event_callback_t(this, &I2CTest::compare_data_cb), I2C_EVENT_ALL, false);
     }
 
     void compare_data_cb(Buffer tx_buffer, Buffer rx_buffer, int narg) {
@@ -86,6 +91,9 @@ private:
             printf("Read data match with written data, event is %d\r\n", narg);
         } else {
             printf("Read data doesn't match with written data, event is %d\r\n", narg);
+            for (int i = 0; i < sizeof(rx_data); i++) {
+                printf("Written:0x%x Read:0x%x \n\r", pattern[i], rx_data[i]);
+            }
         }
         printf("**** Test done ****\r\n");
     }
@@ -102,15 +110,15 @@ private:
         }
     }
 
-    void set_tx_pattern(uint32_t offset) {
-        for (uint32_t i = offset, j = 0; i < sizeof(tx_data) && j < sizeof(pattern); i++, j++) {
-            tx_data[i] = pattern[j];
+    void set_tx_pattern() {
+        for (uint32_t i = 0; i < buffer_size; i++) {
+            tx_data[i + 2] = pattern[i];
         }
     }
 
 private:
     I2C i2c;
-    char tx_data[buffer_size];
+    char tx_data[buffer_size + 2];
     char rx_data[buffer_size];
 };
 
