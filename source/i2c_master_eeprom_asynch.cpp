@@ -126,8 +126,7 @@ private:
 void app_start(int, char*[]) {
     static I2CTest test;
     // set 115200 baud rate for stdout
-    static Serial pc(USBTX, USBRX);
-    pc.baud(115200);
+    get_stdio_serial().baud(115200);
     Scheduler::postCallback(mbed::util::FunctionPointer0<void>(&test, &I2CTest::start).bind());
 }
 
@@ -135,8 +134,7 @@ void app_start(int, char*[]) {
 
 void app_start(int, char*[]) {
     // set 115200 baud rate for stdout
-    static Serial pc(USBTX, USBRX);
-    pc.baud(115200);
+    get_stdio_serial().baud(115200);
     printf("The target does not support I2C asynch API.\r\n");
 }
 #endif
