@@ -23,20 +23,51 @@ SDA and SCL pin definitions are target-specific. To function correctly, the code
 
 1. First, find the pin references in the source files.  In this example, view ``i2c_master_eeprom_asynch.cpp``. The pin references are ``YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SDA``, ``YOTTA_CFG_HARDWARE_TEST_PINS_I2C_SCL``.
 
-2. Next, find the target-specific pin definitions corresponding to the pin references in the target's ``target.json`` file. The file is located at ``yotta_targets/frdm-k64f-gcc/target.json``.
+2. Next, find these target-specific pin references in the configuration data by running the command:
+ ```
+ yotta config
+ ```
+ Each keyword in the pin reference represents a level in the target configuration structure.  To find what ``YOTTA_CFG_HARDWARE_TEST_PINS_I2C`` resolves to, look under config...hardware...test-pins...i2c.
 
-    Each keyword in the pin reference represents a level in the target configuration structure.  To find what YOTTA_CFG_HARDWARE_TEST_PINS_SPI resolves to, look under config/hardware/test-pins/i2c.
+ In this example, the SCL and SDA pins are defined as:
+ ```
+ "i2c": {
+   "sda": "PTE25",
+   "scl": "PTE24"
+ }
+ ```
 
-    The i2c pins for FRDM-K64F are:
+3. Locate those pins on the board's pinout picture: <img src="https://developer.mbed.org/media/uploads/sam_grove/frdm-k64f-pinnout-1.jpg" width="700">
 
-    ```
-    "i2c": {
-      "sda": "PTE25",
-      "scl": "PTE24"
-    }
-    ```
+4. Wire the SDA and SCL pins from FRDM-K64F to EEPROM as follows:
 
-3. Finally, locate those pins on the board's [pinout picture](http://developer.mbed.org/platforms/FRDM-K64F/#overview).
+```
+   3.3V 3.3V
+    ^    ^
+    |    |
+   +++  +++
+10k| |  | |10k (typical for 100kHz)
+   +++  +++
+    |    |  +--------------+
+    |    |  |              |                          3.3V
+    |  +-+--+I2C_SDA       |                           ^
+    |  |    |              |           +---+XXXX+---+  |
+    +-------+I2C_SCL       |           |1          8+--+
+    |  |    |              |           |            |
+    |  |    |   FRDM+K64F  |           |2  EEPROM  7|
+    |  |    |              |           |            |
+    |  |    |              |           |3          6+-----+
+    |  |    |              |           |            |     |
+    |  |    |              |        +--+4          5+--+- |
+    |  |    |              |        |  +------------+  |  |
+    |  |    +--------------+       +++                 |  |
+    |  |                           GND                 |  |
+    |  |                      SDA                      |  |
+    |  +-----------------------------------------------+- |
+    |                         SCL                         |
+    +-----------------------------------------------------+
+
+```
 
 The EEPROM pinout diagram can be found in the datasheet [here](http://dlnmh9ip6v2uc.cloudfront.net/datasheets/Components/General%20IC/34979_SPCN.pdf).
 
